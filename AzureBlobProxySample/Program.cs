@@ -26,6 +26,13 @@ namespace AzureBlobProxySample
             blobUploader.UploadBlobWithRestAPI(containerName, blobName, filePath, proxyHost, proxyPort);
 
             Console.WriteLine("Finished");
+            Console.WriteLine("Start download");
+
+            var downloader = new BlobDownloader(storageKey, storageAccount);
+            downloader.Download(containerName, blobName, filePath, proxyHost, proxyPort);
+            
+            Console.WriteLine("Finished");
+
             Console.ReadLine();
         }
     }
