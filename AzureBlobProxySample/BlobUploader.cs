@@ -15,10 +15,11 @@ namespace AzureBlobProxySample
         private readonly string storageAccount;
         private readonly string version = "2015-12-11";
 
-        public BlobUploader(string storageKey, string storageAccount)
+        public BlobUploader(string storageKey, string storageAccount, string apiVersion)
         {
             this.storageKey = storageKey;
             this.storageAccount = storageAccount;
+            this.version = apiVersion;
         }
 
         public void UploadBlobWithRestAPI(string containerName, string blobName, string filePath, string proxyHost, string proxyPort)

@@ -15,14 +15,16 @@ namespace AzureBlobProxySample
         private readonly string storageAccount;
         private readonly string version = "2012-02-12";
 
-        public BlobDownloader(string storageKey, string storageAccount)
+        public BlobDownloader(string storageKey, string storageAccount, string apiVersion)
         {
             this.storageKey = storageKey;
             this.storageAccount = storageAccount;
+            this.version = apiVersion;
         }
 
         public void Download(string containerName, string blobName, string filePath, string proxyHost, string proxyPort)
         {
+            System.Net.ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
             // Create a SAS token that's valid for one hour.
             string sasToken = GenerateSasToken(storageAccount, storageKey, containerName, blobName, DateTime.UtcNow.AddHours(1));
             // Construct the download URL with the SAS token
@@ -54,17 +56,37 @@ namespace AzureBlobProxySample
             string signedExpiry = expirationTimeUtc.ToString("yyyy-MM-ddTHH:mm:ssZ");
 
             // Create the canonicalized resource string
-            string canonicalizedResource = $"/{storageAccountName}/{containerName}/{blobName}";
+            string canonicalizedResource = $"/blob/{storageAccountName}/{containerName}/{blobName}";
 
             // Create the string-to-sign
             //string stringToSign = $"{signedPermissions}\n{signedStart}\n{signedExpiry}\n{canonicalizedResource}\n\n\n\n{version}\n{signedResource}\n\n\n\n\n";
             //string stringToSign = $"{signedPermissions}\n{signedStart}\n{signedExpiry}\n{canonicalizedResource}\n{version}\n{signedResource}\n";
-            string stringToSign = signedPermissions + "\n" +
-                 signedStart + "\n" +
-                 signedExpiry + "\n" +
-                 canonicalizedResource + "\n" +
-                 "" + "\n" +
-                 version;
+            // string stringToSign = signedPermissions + "\n" +
+            //      signedStart + "\n" +
+            //      signedExpiry + "\n" +
+            //      canonicalizedResource + "\n" +
+            //      "" + "\n" +
+            //      version;
+
+            string stringToSign = String.Join("\n",
+                signedPermissions, //Permissions,
+                signedStart, //startTime,
+                signedExpiry, //expiryTime,
+                canonicalizedResource, //GetCanonicalName(sharedKeyCredential.AccountName, BlobContainerName ?? String.Empty, BlobName ?? String.Empty),
+                "", //Identifier,
+                "", //IPRange.ToString(),
+                "https", //SasExtensions.ToProtocolString(Protocol),
+                version, //Version,
+                signedResource, //Resource,
+                "", //Snapshot ?? BlobVersionId,
+                "", //EncryptionScope,
+                "", //CacheControl,
+                "", //ContentDisposition,
+                "", //ContentEncoding,
+                "", //ContentLanguage,
+                "" //ContentType
+            );
+
             // Convert the storage account key from Base64
             byte[] keyBytes = Convert.FromBase64String(storageAccountKey);
 
@@ -73,10 +95,13 @@ namespace AzureBlobProxySample
             {
                 byte[] signatureBytes = hmacSha256.ComputeHash(Encoding.UTF8.GetBytes(stringToSign));
                 string signature = Convert.ToBase64String(signatureBytes);
+                
+                string encodedPermissions = Uri.EscapeDataString(signedPermissions);
+                string encodedSignature = Uri.EscapeDataString(signature);
 
                 // Construct the SAS token
-                string sasToken = $"sv={version}&sr={signedResource}&sp={signedPermissions}&st={signedStart}&se={signedExpiry}&sig={Uri.EscapeDataString(signature)}";
-
+                // string sasToken = $"sv={version}&sr={signedResource}&sp={signedPermissions}&st={signedStart}&se={signedExpiry}&sig={Uri.EscapeDataString(signature)}";
+                string sasToken = $"sp={encodedPermissions}&st={signedStart}&se={signedExpiry}&spr=https&sv={version}&sr={signedResource}&sig={encodedSignature}";
                 return sasToken;
             }
         }
