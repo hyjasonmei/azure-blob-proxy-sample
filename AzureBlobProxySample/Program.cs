@@ -21,14 +21,15 @@ namespace AzureBlobProxySample
             string proxyHost = ConfigurationManager.AppSettings["proxyHost"];
             string proxyPort = ConfigurationManager.AppSettings["proxyPort"];
             string blobName = Path.GetFileName(filePath);
+            string apiVersion = ConfigurationManager.AppSettings["apiVersion"];
 
-            var blobUploader = new BlobUploader(storageKey, storageAccount);
-            blobUploader.UploadBlobWithRestAPI(containerName, blobName, filePath, proxyHost, proxyPort);
+            // var blobUploader = new BlobUploader(storageKey, storageAccount, apiVersion);
+            // blobUploader.UploadBlobWithRestAPI(containerName, blobName, filePath, proxyHost, proxyPort);
 
             Console.WriteLine("Finished");
             Console.WriteLine("Start download");
 
-            var downloader = new BlobDownloader(storageKey, storageAccount);
+            var downloader = new BlobDownloader(storageKey, storageAccount, apiVersion);
             downloader.Download(containerName, blobName, filePath, proxyHost, proxyPort);
             
             Console.WriteLine("Finished");
